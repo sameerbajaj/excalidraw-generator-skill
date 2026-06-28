@@ -201,35 +201,21 @@ For multi-concept diagrams: **each major concept must use a different visual pat
 ### Step 4: Sketch the Flow
 Before JSON, mentally trace how the eye moves through the diagram. There should be a clear visual story.
 
-### Step 5: Mermaid Preview (MANDATORY)
+### Step 5: Visualization Q&A & Selection Gate (MANDATORY)
 
-Before generating any Excalidraw JSON, you **MUST** present the user with a Mermaid diagram preview in an artifact. This is a fast, low-cost gate that prevents wasted effort on poorly-conceived diagrams.
+Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** formulate a list of visualization options and ask the user to select one. Do **NOT** generate or display any Mermaid diagrams, and do **NOT** generate any Excalidraw files yet.
 
-**Why this exists:** Excalidraw JSON is expensive to produce, hard to iterate on, and invisible to the user until rendered. A Mermaid diagram renders instantly in the artifact viewer, letting the user approve the *structure, content, and layout direction* before you commit.
+**Why this exists:** Selecting the visual metaphor is the most critical design decision. Designing a flowchart when a 2x2 matrix or a chronological timeline makes more sense results in poor communication. Formulating options first saves time and ensures the diagram matches the user's communication goal.
 
-**What to include in the Mermaid preview:**
-1. **The overall structure** — which sections exist, how they relate
-2. **The content** — actual labels, data points, and key text (not placeholders)
-3. **The layout direction** — flowchart TD vs LR, matrix vs timeline, etc.
-4. **A brief note** below the diagram explaining what visual style you plan for the Excalidraw version (e.g., "In Excalidraw, this will be a horizontal matrix with color-coded rows and a callout banner for the key metric.")
-
-**Choose the right Mermaid diagram type for the content:**
-
-| Content Structure | Mermaid Type | Example |
-|---|---|---|
-| Sequential process / flow | `flowchart LR` or `flowchart TD` | User journey, data pipeline |
-| Scenario matrix / decision table | `flowchart TD` with subgraphs per column | Product one-pager scenarios |
-| Timeline / sequence | `sequenceDiagram` | Protocol handshake, API calls |
-| Hierarchy / taxonomy | `flowchart TD` with tree structure | Org chart, feature breakdown |
-| Comparison / side-by-side | `flowchart LR` with parallel subgraphs | Before/after, tradeoffs |
-| State machine / lifecycle | `stateDiagram-v2` | Loan states, order status |
-
-**How to present it:**
-- Create an artifact with the Mermaid diagram in a fenced code block (` ```mermaid `)
-- Below the diagram, add a brief note on planned Excalidraw visual treatment
-- **Ask the user explicitly**: "Does this structure look right? Anything to add, remove, or reorganize before I build the Excalidraw version?"
-
-**Proceed ONLY after the user approves.** If the user requests changes, update the Mermaid preview and re-present. Do not skip to JSON generation.
+**How to execute this gate:**
+1. **Analyze the text/data**: Identify key data splits, user journeys, or core risk/strategic arguments.
+2. **Formulate 3 distinct visual proposals**:
+   - **Proposal A (e.g., Chronological / Timeline)**: Focusing on flow, sequences, or race conditions.
+   - **Proposal B (e.g., Categorical / Matrix / Quadrants)**: Focusing on comparisons, decisions, or risk heatmaps.
+   - **Proposal C (e.g., Quantitative / Funnel / Flow)**: Focusing on data sizing, leaks, or conversions.
+3. **Describe each proposal in text**: Explain the layout structure, visual patterns, and target focal point. Do **NOT** draw them as Mermaid blocks.
+4. **Prompt the user to select**: Use the `ask_question` tool or ask directly in the chat to let the user select their preferred option.
+5. **Proceed ONLY after the user selects** or provides feedback on which visual approach to build.
 
 ### Step 6: Generate JSON
 Only now create the Excalidraw elements. **See below for how to handle large diagrams.**
