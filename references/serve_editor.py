@@ -207,13 +207,10 @@ def generate_dashboard(directory: Path):
         # Check relative path parts to allow files inside a parent .gemini directory
         rel_parts = p.relative_to(directory).parts
         
-        # Skip development/cache folders, but allow the Antigravity brain/artifacts directory
+        # Skip standard development cache/dependency folders
         skip = False
         for x in rel_parts:
-            if x in ['.venv', 'node_modules', '.git', 'scratch', '.tempmediaStorage']:
-                skip = True
-                break
-            if x == '.gemini' and 'antigravity-cli' not in rel_parts:
+            if x in ['.venv', 'node_modules', '.git', 'scratch', '.tempmediaStorage', '__pycache__', '.cache']:
                 skip = True
                 break
         if skip:
