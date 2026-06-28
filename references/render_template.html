@@ -17,6 +17,9 @@
 
     window.renderDiagram = async function(jsonData) {
       try {
+        // Wait for all web fonts (Virgil, Cascadia) to load before exporting SVG,
+        // ensuring high-fidelity screenshot render.
+        await document.fonts.ready;
         const data = typeof jsonData === "string" ? JSON.parse(jsonData) : jsonData;
         const elements = data.elements || [];
         const appState = data.appState || {};

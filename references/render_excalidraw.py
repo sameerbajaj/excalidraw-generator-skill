@@ -216,8 +216,12 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
       );
     }
 
-    const root = ReactDOM.createRoot(document.getElementById("app"));
-    root.render(React.createElement(App));
+    // Wait for all web fonts (Virgil, Cascadia) to load before mounting Excalidraw,
+    // which prevents initial blurry text rendering and metric mismatch.
+    document.fonts.ready.then(() => {
+      const root = ReactDOM.createRoot(document.getElementById("app"));
+      root.render(React.createElement(App));
+    });
   </script>
 </body>
 </html>"""
