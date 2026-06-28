@@ -214,8 +214,11 @@ Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** form
    - **Proposal B (e.g., Categorical / Matrix / Quadrants)**: Focusing on comparisons, decisions, or risk heatmaps.
    - **Proposal C (e.g., Quantitative / Funnel / Flow)**: Focusing on data sizing, leaks, or conversions.
 3. **Describe each proposal in text**: Explain the layout structure, visual patterns, and target focal point. Do **NOT** draw them as Mermaid blocks.
-4. **Prompt the user to select**: Use the `ask_question` tool or ask directly in the chat to let the user select their preferred option.
-5. **Proceed ONLY after the user selects** or provides feedback on which visual approach to build.
+4. **Include the Tuftefy Option**: Ask the user two questions in the initial setup (either combined or as separate options):
+   - Which visualization metaphor (Proposal A, B, or C) to construct.
+   - Whether to **Tuftefy** (or **"toughfy"**) the diagram from the very beginning (applying data-ink maximization and the single focal accent).
+5. **Prompt the user to select**: Use the `ask_question` tool or ask directly in the chat.
+6. **Proceed ONLY after the user selects** the metaphor and style choice.
 
 ### Step 6: Generate JSON
 Only now create the Excalidraw elements. **See below for how to handle large diagrams.**
