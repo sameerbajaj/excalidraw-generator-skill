@@ -65,3 +65,20 @@ Used for code snippets, data examples, and other concrete evidence inside techni
 | Property | Value |
 |----------|-------|
 | Canvas background | `#ffffff` |
+
+---
+
+## Tuftefy Palette (Warm Grays + Single Accent)
+
+When the user requests to **"Tuftefy"** or **"toughfy"** a diagram, override the multi-color semantic palette and use these minimalist tones:
+
+| Visual Element | Target HEX | Purpose |
+|---|---|---|
+| **Canvas Background** | `#fafaf7` | Warm, non-glare paper tone background |
+| **Ink / Main Data Text** | `#1a1a1a` | Dark charcoal for all text, high contrast |
+| **Structural Lines** | `#d8d4cc` | Thin, light gray for divider lines and ranges |
+| **Muted Text / Labels** | `#8a857c` | Low-importance titles, captions, or annotations |
+| **Secondary Backgrounds** | `#efece4` | Faint gray background fill for context blocks |
+| **The Single Accent** | `#b3261e` | Bold red. Used ONLY for the single focal data point |
+| **Alternate Accent** | `#b45309` | Bold amber. Use when focus is on a critical risk/decision |
+

@@ -1,6 +1,6 @@
 ---
 name: excalidraw-generator-skill
-description: Create Excalidraw diagram JSON files that make visual arguments. Use when the user wants to visualize workflows, architectures, or concepts.
+description: Create Excalidraw diagram JSON files that make visual arguments. Use when the user wants to visualize workflows, architectures, or concepts. Also triggers when user asks to "tuftefy", "toughfy", or "Tuftefy" a diagram to maximize readability, analytical honesty, and data-ink ratio.
 ---
 
 # Excalidraw Generator Skill
@@ -584,3 +584,28 @@ uv run playwright install chromium
 25. **Arrows land correctly**: Arrows connect to intended elements without crossing others
 26. **Readable at export size**: Text is legible in the rendered PNG
 27. **Balanced composition**: No large empty voids or overcrowded regions
+
+---
+
+## Tuftefy & "Toughfy" Optimization Rules
+
+When the user asks to **"tuftefy"**, **"toughfy"**, or **"Tuftefy"** a diagram, refine the active diagram using these strict analytical design constraints:
+
+1. **Maximize the Data-Ink Ratio**: 
+   - Remove decorative containers, borders, drop shadows, and visual outlines.
+   - Replace borders with whitespace or light horizontal divider lines (`#d8d4cc`, `strokeWidth: 0.5`).
+2. **Apply the Tuftefy Palette**:
+   - Background: Warm paper tone (`#fafaf7`).
+   - Ink: High-contrast dark charcoal (`#1a1a1a`) for all text/data.
+   - Accents: Exactly ONE focal point in bold red (`#b3261e`) or amber (`#b45309`).
+3. **Smallest Effective Difference**:
+   - Contrast between secondary elements must be minimal but readable (using light gray `#efece4` for panels).
+4. **Direct Labeling**:
+   - Omit legends. Write labels and values directly next to or on the data points and sections.
+5. **Anti-Flatness (Focal Accent)**:
+   - Verify that the one critical insight, number, or path carries the accent color, leaving all standard operational nodes in grayscale/slate.
+
+### Mandatory Post-Generation Action:
+After every new diagram generation or structural edit, you **MUST** output a prompt asking the user:
+> *"Would you like me to Tuftefy this diagram using Edward Tufte's data-ink and visual density principles?"*
+
