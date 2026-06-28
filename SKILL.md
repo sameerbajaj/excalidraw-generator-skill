@@ -197,10 +197,40 @@ For multi-concept diagrams: **each major concept must use a different visual pat
 ### Step 4: Sketch the Flow
 Before JSON, mentally trace how the eye moves through the diagram. There should be a clear visual story.
 
-### Step 5: Generate JSON
+### Step 5: Mermaid Preview (MANDATORY)
+
+Before generating any Excalidraw JSON, you **MUST** present the user with a Mermaid diagram preview in an artifact. This is a fast, low-cost gate that prevents wasted effort on poorly-conceived diagrams.
+
+**Why this exists:** Excalidraw JSON is expensive to produce, hard to iterate on, and invisible to the user until rendered. A Mermaid diagram renders instantly in the artifact viewer, letting the user approve the *structure, content, and layout direction* before you commit.
+
+**What to include in the Mermaid preview:**
+1. **The overall structure** — which sections exist, how they relate
+2. **The content** — actual labels, data points, and key text (not placeholders)
+3. **The layout direction** — flowchart TD vs LR, matrix vs timeline, etc.
+4. **A brief note** below the diagram explaining what visual style you plan for the Excalidraw version (e.g., "In Excalidraw, this will be a horizontal matrix with color-coded rows and a callout banner for the key metric.")
+
+**Choose the right Mermaid diagram type for the content:**
+
+| Content Structure | Mermaid Type | Example |
+|---|---|---|
+| Sequential process / flow | `flowchart LR` or `flowchart TD` | User journey, data pipeline |
+| Scenario matrix / decision table | `flowchart TD` with subgraphs per column | Product one-pager scenarios |
+| Timeline / sequence | `sequenceDiagram` | Protocol handshake, API calls |
+| Hierarchy / taxonomy | `flowchart TD` with tree structure | Org chart, feature breakdown |
+| Comparison / side-by-side | `flowchart LR` with parallel subgraphs | Before/after, tradeoffs |
+| State machine / lifecycle | `stateDiagram-v2` | Loan states, order status |
+
+**How to present it:**
+- Create an artifact with the Mermaid diagram in a fenced code block (` ```mermaid `)
+- Below the diagram, add a brief note on planned Excalidraw visual treatment
+- **Ask the user explicitly**: "Does this structure look right? Anything to add, remove, or reorganize before I build the Excalidraw version?"
+
+**Proceed ONLY after the user approves.** If the user requests changes, update the Mermaid preview and re-present. Do not skip to JSON generation.
+
+### Step 6: Generate JSON
 Only now create the Excalidraw elements. **See below for how to handle large diagrams.**
 
-### Step 6: Render & Validate (MANDATORY)
+### Step 7: Render & Validate (MANDATORY)
 After generating the JSON, you MUST run the render-view-fix loop until the diagram looks right. This is not optional — see the **Render & Validate** section below for the full process.
 
 ---
