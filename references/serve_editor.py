@@ -145,7 +145,42 @@ TEMPLATE = """<!DOCTYPE html>
       border: 2px dashed #cbd5e1;
       color: #64748b;
     }
+    .btn-danger {
+      background: #fee2e2;
+      color: #dc2626;
+      border: 1px solid #fca5a5;
+      flex: 0 0 40px;
+      padding: 8px 0;
+      font-size: 14px;
+    }
+    .btn-danger:hover {
+      background: #fecaca;
+    }
   </style>
+  <script>
+    function deleteDiagram(path) {
+      if (confirm("Are you sure you want to delete '" + path + "' and all its associated files (PNG, HTML editor)? This cannot be undone.")) {
+        fetch("/api/delete", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ path: path })
+        })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            location.reload();
+          } else {
+            alert("Error deleting diagram: " + data.error);
+          }
+        })
+        .catch(err => {
+          alert("Network error: " + err);
+        });
+      }
+    }
+  </script>
 </head>
 <body>
   <header>
@@ -223,6 +258,7 @@ def generate_dashboard(directory: Path):
                 <div class="card-actions">
                   {editor_btn}
                   <a class="btn btn-secondary" href="{rel_path}" download>📐 Get JSON</a>
+                  <button class="btn btn-danger" onclick="deleteDiagram('{rel_path}')" title="Delete Diagram">🗑️</button>
                 </div>
               </div>
             </div>
@@ -274,6 +310,55 @@ def main():
                     self.send_error(500, f"Error generating dashboard: {e}")
             else:
                 super().do_GET()
+
+        def do_POST(self):
+            if not single_file_mode and self.path == '/api/delete':
+                try:
+                    content_length = int(self.headers['Content-Length'])
+                    post_data = self.rfile.read(content_length)
+                    req = json.loads(post_data.decode('utf-8'))
+                    rel_path_str = req.get('path')
+                    
+                    if not rel_path_str:
+                        self.send_error(400, "Missing path parameter")
+                        return
+                        
+                    # Prevent directory traversal attacks
+                    path_to_del = (directory / rel_path_str).resolve()
+                    if not path_to_del.is_relative_to(directory.resolve()):
+                        self.send_error(403, "Access denied")
+                        return
+                        
+                    if path_to_del.exists() and path_to_del.suffix == '.excalidraw':
+                        # 1. Delete .excalidraw
+                        path_to_del.unlink()
+                        
+                        # 2. Delete .png preview
+                        png_path = path_to_del.with_suffix('.png')
+                        if png_path.exists():
+                            png_path.unlink()
+                            
+                        # 3. Delete _editor.html companion
+                        editor_path = path_to_del.with_name(f"{path_to_del.name}_editor.html")
+                        if editor_path.exists():
+                            editor_path.unlink()
+                            
+                        self.send_response(200)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"success": True}).encode('utf-8'))
+                    else:
+                        self.send_response(404)
+                        self.send_header('Content-type', 'application/json')
+                        self.end_headers()
+                        self.wfile.write(json.dumps({"success": False, "error": "Diagram file not found"}).encode('utf-8'))
+                except Exception as e:
+                    self.send_response(500)
+                    self.send_header('Content-type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({"success": False, "error": str(e)}).encode('utf-8'))
+            else:
+                self.send_error(404, "Endpoint not found")
                 
     socketserver.TCPServer.allow_reuse_address = True
     server = socketserver.TCPServer(("", port), Handler)

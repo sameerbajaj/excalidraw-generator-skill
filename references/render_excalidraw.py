@@ -183,9 +183,25 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
             fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
           }
         },
-          React.createElement("div", null,
-            React.createElement("h1", { style: { fontSize: "16px", margin: 0, fontWeight: "bold" } }, "Excalidraw Live Editor"),
-            React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Double-click this HTML file, click 'Link Local File', and edit in real-time.")
+          React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "16px" } },
+            React.createElement("a", {
+              href: "/",
+              style: {
+                background: "#3b82f6",
+                color: "white",
+                textDecoration: "none",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontWeight: "600",
+                fontSize: "12px",
+                display: "inline-flex",
+                alignItems: "center"
+              }
+            }, "🏠 Dashboard"),
+            React.createElement("div", null,
+              React.createElement("h1", { style: { fontSize: "16px", margin: 0, fontWeight: "bold" } }, "Excalidraw Live Editor"),
+              React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Double-click this HTML file, click 'Link Local File', and edit in real-time.")
+            )
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "12px" } },
             fileBound ? React.createElement("span", { style: { background: "#10b981", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" } }, `Connected: ${fileName}`)
