@@ -1,0 +1,86 @@
+# Excalidraw Generator Skill
+
+A coding agent skill that empowers AI coding assistants (like Gemini, Claude Code, Cline, and others) to generate beautiful, structured, and practical Excalidraw diagrams from natural language descriptions. 
+
+Rather than just displaying plain boxes and generic layouts, this skill uses specific design methodologies to help agents create diagrams that **argue visually**.
+
+---
+
+## 🚀 Key Improvements & Bug Fixes
+
+This repository is a fork of the original [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill) by [@coleam00](https://github.com/coleam00) and includes critical updates:
+
+*   **Fixed CDN Import/Playwright Timeout Bug:** The original skill's render template relied on an unpinned `https://esm.sh/@excalidraw/excalidraw?bundle` import. Recent CDN changes caused transitives (like `@braintree/sanitize-url`) to return 404s, leading to a silent 30-second Playwright timeout during initialization. This fork resolves that by **pinning version 0.18.0** and using esm.sh's **`?bundle-deps`** flag to bundle dependencies statically at build-time.
+*   **Self-Contained References:** Standardized absolute and relative execution paths inside `SKILL.md` to ensure the Python renderer resolves successfully.
+
+---
+
+## 🎨 What Makes This Skill Different
+
+1.  **Arguments Over Layouts:** Instead of rendering uniform card grids, the agent maps concepts to specialized visual models:
+    *   *Timeline/Sequence:* Horizontal or vertical lines with dots and free-floating text labels.
+    *   *Tree/Hierarchy:* Lines and branched sub-items (minimizing container clutter).
+    *   *Fan-out & Convergence:* Directional arrows radiating from or collapsing into focal nodes.
+2.  **Evidence Artifacts:** Diagrams contain concrete examples—such as language-appropriate syntax-highlighted code blocks, real JSON payload blocks, and actual spec-defined event names—rather than generic placeholders.
+3.  **Visual Validation Loop:** Includes a Playwright-based Python script (`render_excalidraw.py`) that boots a headless Chromium instance to compile the `.excalidraw` JSON into a `.png` image. The agent inspects this image during generation to detect and fix text clippings, overlaps, or routing issues before presenting the file to the user.
+4.  **Brand-Customizable:** A centralized color palette configuration (`references/color-palette.md`) dictates all shape colors, text colors, and background themes.
+
+---
+
+## 📦 File Structure
+
+```
+excalidraw-generator-skill/
+  SKILL.md                          # Main skill instructions and visual workflow
+  README.md                         # Project documentation and attribution (this file)
+  .gitignore                        # Standard files, virtualenvs, and asset ignore rules
+  references/
+    color-palette.md                # Centralized color tokens (edit to change brand styling)
+    element-templates.md            # Raw JSON chunks for shapes, arrows, lines, and text
+    json-schema.md                  # Excalidraw element property reference
+    render_excalidraw.py            # Playwright script to render diagram to PNG
+    render_template.html            # Browser wrapper containing Excalidraw renderer
+    pyproject.toml                  # Python package and dependency configurations
+```
+
+---
+
+## ⚙️ Setup & Installation
+
+Copy this directory into your agent's customization root folder (e.g., `.agents/skills/` or `.gemini/skills/` depending on your environment):
+
+```bash
+# Clone the repository
+git clone https://github.com/YOUR_USERNAME/excalidraw-generator-skill.git
+
+# Move it into your agent skills path
+mv excalidraw-generator-skill ~/.gemini/skills/excalidraw-generator-skill
+```
+
+### Install Rendering Dependencies
+
+To enable the visual validation render loop, install the required packages:
+
+```bash
+cd ~/.gemini/skills/excalidraw-generator-skill/references
+uv sync
+uv run playwright install chromium
+```
+
+---
+
+## 🛠️ Usage
+
+Simply instruct your coding agent:
+
+> *"Generate an Excalidraw diagram showing how a client app establishes a WebSocket connection, authenticates, and handles incoming state-delta frames."*
+
+The agent will load the generator skill, lay out the elements, output a `.excalidraw` JSON file, render it to a `.png` for inspection, fix any layout defects, and present both to you.
+
+---
+
+## 🤝 Credits & Attribution
+
+This skill is built upon the wonderful foundation created by **[coleam00/excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill)**. 
+
+Special thanks to the original author, [@coleam00](https://github.com/coleam00), for designing the core Excalidraw visual-arguing methodology, color palette definitions, and playwright rendering pipeline framework.

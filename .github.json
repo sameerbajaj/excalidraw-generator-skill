@@ -1,0 +1,11 @@
+{
+  "syncDirection" : "upstream",
+  "lastSyncedContentHash" : "60b96cc179b3c8af",
+  "branch" : "main",
+  "lastChecked" : "2026-06-28T15:20:03Z",
+  "hasWriteAccess" : false,
+  "repoURL" : "https:\/\/github.com\/coleam00\/excalidraw-diagram-skill",
+  "repoName" : "excalidraw-diagram-skill",
+  "owner" : "coleam00",
+  "lastSyncedCommitSHA" : "8646fcc9f74f38539c6cdb4c969723336a96ddcd"
+}
