@@ -206,7 +206,17 @@ def generate_dashboard(directory: Path):
     for p in directory.glob('**/*.excalidraw'):
         # Check relative path parts to allow files inside a parent .gemini directory
         rel_parts = p.relative_to(directory).parts
-        if any(x in rel_parts for x in ['.venv', 'node_modules', '.git', 'scratch', '.gemini', '.tempmediaStorage']):
+        
+        # Skip development/cache folders, but allow the Antigravity brain/artifacts directory
+        skip = False
+        for x in rel_parts:
+            if x in ['.venv', 'node_modules', '.git', 'scratch', '.tempmediaStorage']:
+                skip = True
+                break
+            if x == '.gemini' and 'antigravity-cli' not in rel_parts:
+                skip = True
+                break
+        if skip:
             continue
         excalidraw_files.append(p)
         
