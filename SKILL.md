@@ -162,6 +162,10 @@ Evidence artifacts, code snippets, and concrete examples within each section. Th
 
 ## Design Process (Do This BEFORE Generating JSON)
 
+### File Target & Lifecycle Policy
+- **Editing existing diagrams**: When the user asks to edit, refine, or adjust a diagram, **always modify the same file** (do not create a new version or new file). Keep edits focused on the existing file path.
+- **Changing diagram types**: Create a **new file** ONLY when the user explicitly requests a complete shift to a different diagram type (e.g., changing from a flowchart to a 2x2 matrix). Otherwise, reuse the active diagram file.
+
 ### Step 0: Assess Depth Required
 Before anything else, determine if this needs to be:
 - **Simple/Conceptual**: Abstract shapes, labels, relationships (mental models, philosophies)
