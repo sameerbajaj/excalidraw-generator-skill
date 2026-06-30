@@ -103,6 +103,8 @@ For any Google Doc, multi-heading strategy document, or source longer than rough
 4. Recommend one default candidate, but ask the user to choose before generating.
 5. Ask whether to generate one targeted diagram, several separate diagrams, or a high-level overview map.
 
+When asking the user to choose, prefer a structured choice prompt if the runtime exposes one (for example `request_user_input`, `ask_question`, or a Plan-mode-style option picker). Put the recommended option first, keep labels short, and use one-sentence descriptions. If more than three diagram slices are useful, show the full candidate list in prose, then put the top 2-3 choices in the structured prompt and leave the free-form/other path for the rest.
+
 **Bypass this gate only when:**
 - The user names the exact section, claim, workflow, or diagram target.
 - The source is already narrow enough to fit one visual argument.
@@ -309,7 +311,12 @@ Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** form
    - Which scope to draw.
    - Which visualization metaphor (Proposal A, B, or C) to construct.
    - Whether to **Tuftefy** (or **"toughfy"**) the diagram from the very beginning (applying data-ink maximization and the single focal accent).
-6. **Prompt the user to select**: Use the `ask_question` tool if available, or ask directly in the chat. Keep the prompt short and decision-oriented.
+6. **Prompt the user to select with structured choices when possible**:
+   - Use a Plan-mode-style choice UI when the runtime exposes one (`request_user_input`, `ask_question`, or equivalent).
+   - Ask at most three short questions: scope, metaphor, and Tuftefy/style.
+   - Put the recommended option first and mark it as recommended when the UI supports that.
+   - Keep option labels to 1-5 words and descriptions to one sentence.
+   - If the UI is not available, fall back to a concise text prompt with the same options.
 7. **Proceed ONLY after the user selects** the scope, metaphor, and style choice.
 
 **Style choices are sticky.** If the user already selected Tuftefy/no-Tuftefy, do not ask the same style question again after generation. Mention the applied style in the completion note instead.

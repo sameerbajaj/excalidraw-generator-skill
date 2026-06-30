@@ -76,7 +76,7 @@ uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace --daem
 3. Use `references/element-templates.md` for JSON shapes instead of inventing element structure from memory.
 4. For technical diagrams, research the real protocol/API/schema names before drawing.
 5. For long docs or Google Doc tabs, capture/read the source first, identify diagram-worthy section candidates, and ask the user which slice to draw before generating final JSON.
-6. Before generating Excalidraw JSON, offer scope plus three visualization metaphors and ask the user to choose, including whether to Tuftefy from the start.
+6. Before generating Excalidraw JSON, offer scope plus three visualization metaphors and ask the user to choose, including whether to Tuftefy from the start. Use a structured Plan-mode-style choice prompt when available.
 7. Do not turn an entire strategy doc, launch email, or PRD into one crowded canvas unless the user explicitly asks for a whole-document overview.
 8. For comprehensive diagrams, build one visual section at a time with descriptive IDs and section-scoped seeds.
 9. Save the final `.excalidraw` file under the workspace `diagrams/` directory and keep the captured source text under `inputs/`.
