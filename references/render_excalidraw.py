@@ -96,7 +96,7 @@ def load_editor_css() -> str:
         return _EDITOR_CSS_CACHE
 
     try:
-        with urllib.request.urlopen(EXCALIDRAW_CSS_URL, timeout=10) as response:
+        with urllib.request.urlopen(EXCALIDRAW_CSS_URL, timeout=2) as response:
             css = response.read().decode("utf-8")
         if ".excalidraw" not in css:
             raise RenderError("Downloaded Excalidraw CSS did not contain expected rules")

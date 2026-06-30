@@ -117,6 +117,8 @@ uv run python excalidraw_workspace.py render-all ~/excalidraw-workspace --scale 
 uv run python excalidraw_workspace.py serve ~/excalidraw-workspace --daemon --no-browser
 ```
 
+If rendering needs network approval or is deferred, still start the dashboard server so the editable `.excalidraw` file is available immediately.
+
 The dashboard lists all `.excalidraw` files in the workspace, creates missing editor HTML files, refreshes PNG previews with scale/width controls, opens diagrams in the local editor, downloads JSON, and can delete a diagram plus its generated companions.
 
 The workspace helper intentionally does not replace the diagram-design method inherited from `coleam00/excalidraw-diagram-skill`; it only removes the slow setup, Google Doc extraction, render, and server steps around that method.

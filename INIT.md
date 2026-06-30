@@ -80,9 +80,11 @@ uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace --daem
 7. Do not turn an entire strategy doc, launch email, or PRD into one crowded canvas unless the user explicitly asks for a whole-document overview.
 8. For comprehensive diagrams, build one visual section at a time with descriptive IDs and section-scoped seeds.
 9. Save the final `.excalidraw` file under the workspace `diagrams/` directory and keep the captured source text under `inputs/`.
-10. After each generation or structural edit, render to PNG, inspect the image, fix defects, and repeat until the result is presentable.
-11. When editing an existing diagram, modify the same file unless the user explicitly asks for a different diagram type.
-12. Keep the visual methodology, pattern library, color palette, and element templates aligned with the upstream Coleam skill unless the user explicitly asks to change the design language.
+10. After creating or editing a diagram, start or refresh the workspace dashboard server before ending the turn unless the user explicitly requested file-only work.
+11. After each generation or structural edit, render to PNG, inspect the image, fix defects, and repeat until the result is presentable.
+12. If render approval is blocked by network/privacy constraints, still validate JSON, start the server, and provide the editable file path plus server URL.
+13. When editing an existing diagram, modify the same file unless the user explicitly asks for a different diagram type.
+14. Keep the visual methodology, pattern library, color palette, and element templates aligned with the upstream Coleam skill unless the user explicitly asks to change the design language.
 
 ## Known Friction
 

@@ -66,6 +66,8 @@ uv run python excalidraw_workspace.py render-all <workspace> --scale 2 --width 1
 
 The dashboard server scans the workspace recursively, generates missing editor HTML files, shows PNG previews, lets the user refresh previews with scale/width controls, opens the local editor, downloads JSON, and deletes diagram companions.
 
+**Completion rule:** After creating or editing a `.excalidraw` file, start or refresh the workspace dashboard server before ending the turn unless the user explicitly asked for file-only work. If rendering is blocked by network/privacy approval, still start the dashboard and provide the `.excalidraw` path plus the server URL. Do not wait for the user to ask "where is the server?"
+
 **Design preservation:** The workspace helper is only for intake, storage, rendering, and server orchestration. Keep the visual methodology, pattern library, color palette, and element templates aligned with the upstream Coleam Excalidraw diagram skill unless the user explicitly asks to change the diagram style itself.
 
 ## Customization
@@ -309,6 +311,8 @@ Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** form
    - Whether to **Tuftefy** (or **"toughfy"**) the diagram from the very beginning (applying data-ink maximization and the single focal accent).
 6. **Prompt the user to select**: Use the `ask_question` tool if available, or ask directly in the chat. Keep the prompt short and decision-oriented.
 7. **Proceed ONLY after the user selects** the scope, metaphor, and style choice.
+
+**Style choices are sticky.** If the user already selected Tuftefy/no-Tuftefy, do not ask the same style question again after generation. Mention the applied style in the completion note instead.
 
 ### Step 6: Generate JSON
 Only now create the Excalidraw elements. **See below for how to handle large diagrams.**
@@ -561,6 +565,8 @@ See `references/element-templates.md` for copy-paste JSON templates for each ele
 
 You cannot judge a diagram from JSON alone. After generating or editing the Excalidraw JSON, you MUST render it to PNG, view the image, and fix what you see — in a loop until it's right. This is a core part of the workflow, not a final check.
 
+If rendering requires network approval because Excalidraw/React assets are loaded from external CDNs, ask for that approval clearly. While waiting, still validate the JSON structure, update the workspace manifest, start the local dashboard server, and provide the editable `.excalidraw` path. Rendering approval should block only PNG preview/polish, not workspace availability.
+
 ### How to Render
 
 ```bash
@@ -685,6 +691,8 @@ When the user asks to **"tuftefy"**, **"toughfy"**, or **"Tuftefy"** a diagram, 
 5. **Anti-Flatness (Focal Accent)**:
    - Verify that the one critical insight, number, or path carries the accent color, leaving all standard operational nodes in grayscale/slate.
 
-### Mandatory Post-Generation Action:
-After every new diagram generation or structural edit, you **MUST** output a prompt asking the user:
+### Optional Post-Generation Action:
+After a new diagram generation or structural edit where the user has not already chosen a visual style, ask:
 > *"Would you like me to Tuftefy this diagram using Edward Tufte's data-ink and visual density principles?"*
+
+If the user already chose Tuftefy or no Tuftefy during the scope gate, do not ask again.
