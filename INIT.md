@@ -11,9 +11,10 @@ This repository is a Codex/agent skill for creating Excalidraw diagrams that mak
 - `references/color-palette.md` is the single source of truth for all normal and Tuftefy colors.
 - `references/element-templates.md` contains copyable Excalidraw element JSON templates.
 - `references/json-schema.md` summarizes the Excalidraw properties the skill relies on.
+- `references/excalidraw_workspace.py` creates and manages one diagram workspace with `inputs/`, `diagrams/`, `exports/`, a manifest, render-all support, and the dashboard launcher.
 - `references/render_excalidraw.py` validates `.excalidraw` JSON, renders it with Playwright, writes a PNG, and generates a companion local editor HTML file.
 - `references/render_template.html` is the browser-side Excalidraw export wrapper used by the renderer.
-- `references/serve_editor.py` starts a local dashboard/editor server for `.excalidraw` files under a chosen directory.
+- `references/serve_editor.py` starts a local dashboard/editor server for `.excalidraw` files under a chosen directory, generates missing editor HTML files, and exposes preview refresh controls.
 - `references/pyproject.toml` defines the Python/Playwright runtime dependencies for the helper scripts. The runtime environment is intentionally rooted in `references/`.
 
 ## Bootstrap
@@ -33,6 +34,14 @@ cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/r
 python3 -m py_compile render_excalidraw.py serve_editor.py
 ```
 
+Create a diagram workspace:
+
+```bash
+cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/references
+uv run python excalidraw_workspace.py init /path/to/excalidraw-workspace
+uv run python excalidraw_workspace.py new /path/to/excalidraw-workspace --title "Strategy Diagram" --source /path/to/source.md
+```
+
 Render a diagram:
 
 ```bash
@@ -44,7 +53,7 @@ Open the dashboard/editor for a workspace:
 
 ```bash
 cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/references
-uv run python serve_editor.py /path/to/diagram-workspace
+uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace
 ```
 
 ## Operating Rules For Future Agents
@@ -55,22 +64,19 @@ uv run python serve_editor.py /path/to/diagram-workspace
 4. For technical diagrams, research the real protocol/API/schema names before drawing.
 5. Before generating Excalidraw JSON, offer three visualization metaphors and ask the user to choose one, including whether to Tuftefy from the start.
 6. For comprehensive diagrams, build one visual section at a time with descriptive IDs and section-scoped seeds.
-7. After each generation or structural edit, render to PNG, inspect the image, fix defects, and repeat until the result is presentable.
-8. When editing an existing diagram, modify the same file unless the user explicitly asks for a different diagram type.
+7. Save the final `.excalidraw` file under the workspace `diagrams/` directory and keep the captured source text under `inputs/`.
+8. After each generation or structural edit, render to PNG, inspect the image, fix defects, and repeat until the result is presentable.
+9. When editing an existing diagram, modify the same file unless the user explicitly asks for a different diagram type.
 
 ## Known Friction
 
-- `SKILL.md` and `render_excalidraw.py` still contain a few hard-coded setup/help paths from earlier tool homes, including `.gemini` and upstream `.claude` examples. The scripts are path-independent at runtime because they resolve `render_template.html` relative to `__file__`, but the displayed instructions should be normalized before broad reuse.
-- `README.md` still has a placeholder clone command using `YOUR_USERNAME`; update it to `sameerbajaj/excalidraw-generator-skill` before treating the README as publish-ready.
 - `.github.json` still points at the upstream `coleam00/excalidraw-diagram-skill` metadata and says `hasWriteAccess: false`. Treat it as sync metadata, not authoritative repo identity.
 - The renderer depends on CDN-hosted Excalidraw/React modules. The fork pins Excalidraw `0.18.0` and uses `bundle-deps`, which fixes the upstream timeout class, but first render still needs network access unless dependencies are cached.
 - `serve_editor.py` includes a delete endpoint for `.excalidraw`, matching `.png`, and companion editor HTML files. Only run it against trusted local directories.
 
 ## Recommended Next Cleanup
 
-1. Normalize setup paths in `SKILL.md`, `README.md`, and `render_excalidraw.py` so all examples point to this repo name or use relative commands.
-2. Add `agents/openai.yaml` if this skill will be installed as a Codex skill with UI metadata.
-3. Add a tiny sample `.excalidraw` fixture so renderer smoke tests can exercise the full Playwright path.
-4. Decide whether helper scripts should stay under `references/` for compatibility or move to `scripts/` with compatibility shims.
-5. If the helpers become importable library code, create a real Python package and then add `__init__.py`; do not add a symbolic package init while the repo is still script-oriented.
-
+1. Add `agents/openai.yaml` if this skill will be installed as a Codex skill with UI metadata.
+2. Add a tiny sample `.excalidraw` fixture so renderer smoke tests can exercise the full Playwright path.
+3. Decide whether helper scripts should stay under `references/` for compatibility or move to `scripts/` with compatibility shims.
+4. If the helpers become importable library code, create a real Python package and then add `__init__.py`; do not add a symbolic package init while the repo is still script-oriented.

@@ -1,6 +1,6 @@
 ---
 name: excalidraw-generator-skill
-description: Create Excalidraw diagram JSON files that make visual arguments. Use when the user wants to visualize workflows, architectures, or concepts. Also triggers when user asks to "tuftefy", "toughfy", or "Tuftefy" a diagram to maximize readability, analytical honesty, and data-ink ratio.
+description: Create Excalidraw diagram JSON files and manage a local diagram workspace/dashboard from strategy text, planning prose, workflows, architectures, or concepts. Use when the user wants to turn text into editable Excalidraw diagrams, store diagrams in one place, render PNG previews, run the local editor/dashboard server, or "tuftefy", "toughfy", or "Tuftefy" a diagram for readability, analytical honesty, and data-ink ratio.
 ---
 
 # Excalidraw Generator Skill
@@ -8,6 +8,42 @@ description: Create Excalidraw diagram JSON files that make visual arguments. Us
 Generate `.excalidraw` JSON files that **argue visually**, not just display information.
 
 **Setup:** If the user asks you to set up this skill (renderer, dependencies, etc.), see `README.md` for instructions.
+
+## Workspace Storage & Server Flow
+
+When the user provides strategy text, planning prose, or rough notes and wants editable diagrams, use a workspace-first flow. The workspace is the single local home for source text, `.excalidraw` files, PNG previews, editor HTML files, and the dashboard server.
+
+**Default workspace path:** Use the user's requested project/document folder when provided, with an `excalidraw-workspace/` child. If no folder is provided, use `./excalidraw-workspace` from the current working directory. Do not store user diagrams inside this skill folder unless the user explicitly asks to use the skill repo as the workspace.
+
+From the skill's `references/` directory:
+
+```bash
+uv run python excalidraw_workspace.py init <workspace>
+uv run python excalidraw_workspace.py new <workspace> --title "<diagram title>" --source <source-text.md>
+uv run python excalidraw_workspace.py serve <workspace>
+```
+
+If the text only exists in the chat and can be passed safely through stdin:
+
+```bash
+uv run python excalidraw_workspace.py new <workspace> --title "<diagram title>" --stdin
+```
+
+The `new` command captures the source text under `inputs/`, creates a starter `.excalidraw` under `diagrams/`, updates `manifest.json`, and prints the exact target paths. Replace the starter canvas with the final designed Excalidraw JSON after the user selects the visualization metaphor.
+
+After writing or editing a diagram, render it:
+
+```bash
+uv run python render_excalidraw.py <workspace>/diagrams/<diagram>.excalidraw --scale 2 --width 1920
+```
+
+Or render every diagram in the workspace:
+
+```bash
+uv run python excalidraw_workspace.py render-all <workspace> --scale 2 --width 1920
+```
+
+The dashboard server scans the workspace recursively, generates missing editor HTML files, shows PNG previews, lets the user refresh previews with scale/width controls, opens the local editor, downloads JSON, and deletes diagram companions.
 
 ## Customization
 
@@ -270,7 +306,7 @@ Each section should be independently understandable: its elements, internal arro
 
 - **Don't generate the entire diagram in one response.** You will hit the output token limit and produce truncated, broken JSON. Even if the diagram is small enough to fit, splitting into sections produces better results.
 - **Don't use a coding agent** to generate the JSON. The agent won't have sufficient context about the skill's rules, and the coordination overhead negates any benefit.
-- **Don't write a Python generator script.** The templating and coordinate math seem helpful but introduce a layer of indirection that makes debugging harder. Hand-crafted JSON with descriptive IDs is more maintainable.
+- **Don't write a Python generator script for the final diagram layout.** The workspace helper may create a starter file and manage storage/server tasks, but the final diagram JSON should be hand-crafted section by section with descriptive IDs. Coordinate templating adds indirection and makes visual debugging harder.
 
 ---
 
@@ -474,7 +510,8 @@ You cannot judge a diagram from JSON alone. After generating or editing the Exca
 ### How to Render
 
 ```bash
-cd /Users/sameerbajaj/.gemini/skills/excalidraw-generator-skill/references && uv run python render_excalidraw.py <path-to-file.excalidraw>
+cd <path-to-this-skill>/references
+uv run python render_excalidraw.py <path-to-file.excalidraw> --scale 2 --width 1920
 ```
 
 This outputs a PNG next to the `.excalidraw` file. Then use the **Read tool** on the PNG to actually view it.
@@ -526,7 +563,7 @@ The loop is done when:
 ### First-Time Setup
 If the render script hasn't been set up yet:
 ```bash
-cd /Users/sameerbajaj/.gemini/skills/excalidraw-generator-skill/references
+cd <path-to-this-skill>/references
 uv sync
 uv run playwright install chromium
 ```
@@ -597,4 +634,3 @@ When the user asks to **"tuftefy"**, **"toughfy"**, or **"Tuftefy"** a diagram, 
 ### Mandatory Post-Generation Action:
 After every new diagram generation or structural edit, you **MUST** output a prompt asking the user:
 > *"Would you like me to Tuftefy this diagram using Edward Tufte's data-ink and visual density principles?"*
-

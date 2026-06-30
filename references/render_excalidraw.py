@@ -1,11 +1,11 @@
 """Render Excalidraw JSON to PNG using Playwright + headless Chromium.
 
 Usage:
-    cd .claude/skills/excalidraw-diagram/references
+    cd /path/to/excalidraw-generator-skill/references
     uv run python render_excalidraw.py <path-to-file.excalidraw> [--output path.png] [--scale 2] [--width 1920]
 
 First-time setup:
-    cd .claude/skills/excalidraw-diagram/references
+    cd /path/to/excalidraw-generator-skill/references
     uv sync
     uv run playwright install chromium
 """
@@ -13,9 +13,14 @@ First-time setup:
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import sys
 from pathlib import Path
+
+
+class RenderError(RuntimeError):
+    """Raised when an Excalidraw file cannot be rendered."""
 
 
 def validate_excalidraw(data: dict) -> list[str]:
@@ -72,7 +77,8 @@ def compute_bounding_box(elements: list[dict]) -> tuple[float, float, float, flo
 def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
     """Generate a companion interactive editor HTML file for the diagram."""
     editor_path = excalidraw_path.with_name(f"{excalidraw_path.name}_editor.html")
-    
+    safe_filename = html.escape(excalidraw_path.name)
+
     # Excalidraw template HTML string
     template = """<!DOCTYPE html>
 <html>
@@ -200,7 +206,7 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
             }, "🏠 Dashboard"),
             React.createElement("div", null,
               React.createElement("h1", { style: { fontSize: "16px", margin: 0, fontWeight: "bold" } }, "Excalidraw Live Editor"),
-              React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Double-click this HTML file, click 'Link Local File', and edit in real-time.")
+              React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Open from the dashboard, click 'Link Local File', and edit in real time.")
             )
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "12px" } },
@@ -252,7 +258,7 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
         "files": data.get("files", {})
     }
     
-    html_content = template.replace("{filename}", excalidraw_path.name).replace("{json_data}", json.dumps(clean_data, indent=2))
+    html_content = template.replace("{filename}", safe_filename).replace("{json_data}", json.dumps(clean_data, indent=2))
     editor_path.write_text(html_content, encoding="utf-8")
     return editor_path
 
@@ -267,25 +273,23 @@ def render(
     # Import playwright here so validation errors show before import errors
     try:
         from playwright.sync_api import sync_playwright
-    except ImportError:
-        print("ERROR: playwright not installed.", file=sys.stderr)
-        print("Run: cd .claude/skills/excalidraw-diagram/references && uv sync && uv run playwright install chromium", file=sys.stderr)
-        sys.exit(1)
+    except ImportError as exc:
+        raise RenderError(
+            "playwright not installed. "
+            f"Run: cd {Path(__file__).resolve().parent} && uv sync && uv run playwright install chromium"
+        ) from exc
 
     # Read and validate
     raw = excalidraw_path.read_text(encoding="utf-8")
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
-        print(f"ERROR: Invalid JSON in {excalidraw_path}: {e}", file=sys.stderr)
-        sys.exit(1)
+        raise RenderError(f"Invalid JSON in {excalidraw_path}: {e}") from e
 
     errors = validate_excalidraw(data)
     if errors:
-        print(f"ERROR: Invalid Excalidraw file:", file=sys.stderr)
-        for err in errors:
-            print(f"  - {err}", file=sys.stderr)
-        sys.exit(1)
+        joined = "; ".join(errors)
+        raise RenderError(f"Invalid Excalidraw file: {joined}")
 
     # Generate the companion editor HTML file
     try:
@@ -312,8 +316,7 @@ def render(
     # Template path (same directory as this script)
     template_path = Path(__file__).parent / "render_template.html"
     if not template_path.exists():
-        print(f"ERROR: Template not found at {template_path}", file=sys.stderr)
-        sys.exit(1)
+        raise RenderError(f"Template not found at {template_path}")
 
     template_url = template_path.as_uri()
 
@@ -322,9 +325,10 @@ def render(
             browser = p.chromium.launch(headless=True)
         except Exception as e:
             if "Executable doesn't exist" in str(e) or "browserType.launch" in str(e):
-                print("ERROR: Chromium not installed for Playwright.", file=sys.stderr)
-                print("Run: cd .claude/skills/excalidraw-diagram/references && uv run playwright install chromium", file=sys.stderr)
-                sys.exit(1)
+                raise RenderError(
+                    "Chromium not installed for Playwright. "
+                    f"Run: cd {Path(__file__).resolve().parent} && uv run playwright install chromium"
+                ) from e
             raise
 
         page = browser.new_page(
@@ -339,14 +343,12 @@ def render(
         page.wait_for_function("window.__moduleReady === true", timeout=30000)
 
         # Inject the diagram data and render
-        json_str = json.dumps(data)
-        result = page.evaluate(f"window.renderDiagram({json_str})")
+        result = page.evaluate("data => window.renderDiagram(data)", data)
 
         if not result or not result.get("success"):
             error_msg = result.get("error", "Unknown render error") if result else "renderDiagram returned null"
-            print(f"ERROR: Render failed: {error_msg}", file=sys.stderr)
             browser.close()
-            sys.exit(1)
+            raise RenderError(f"Render failed: {error_msg}")
 
         # Wait for render completion signal
         page.wait_for_function("window.__renderComplete === true", timeout=15000)
@@ -354,9 +356,8 @@ def render(
         # Screenshot the SVG element
         svg_el = page.query_selector("#root svg")
         if svg_el is None:
-            print("ERROR: No SVG element found after render.", file=sys.stderr)
             browser.close()
-            sys.exit(1)
+            raise RenderError("No SVG element found after render")
 
         svg_el.screenshot(path=str(output_path))
         browser.close()
@@ -376,7 +377,11 @@ def main() -> None:
         print(f"ERROR: File not found: {args.input}", file=sys.stderr)
         sys.exit(1)
 
-    png_path = render(args.input, args.output, args.scale, args.width)
+    try:
+        png_path = render(args.input, args.output, args.scale, args.width)
+    except RenderError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
     print(str(png_path))
 
 

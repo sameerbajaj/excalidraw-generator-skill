@@ -17,6 +17,8 @@ Pipfile.lock
 *.jpg
 *.jpeg
 *.svg
+*_editor.html
+excalidraw-workspace/
 
 # OS generated files
 .DS_Store
