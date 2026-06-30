@@ -16,7 +16,22 @@ import argparse
 import html
 import json
 import sys
+import urllib.request
 from pathlib import Path
+
+EXCALIDRAW_VERSION = "0.18.0"
+EXCALIDRAW_ASSET_BASE = f"https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@{EXCALIDRAW_VERSION}/dist/prod/"
+EXCALIDRAW_CSS_URL = f"{EXCALIDRAW_ASSET_BASE}index.min.css"
+EXCALIDRAW_MODULE_URL = (
+    f"https://esm.sh/@excalidraw/excalidraw@{EXCALIDRAW_VERSION}"
+    "?external=react,react-dom&bundle-deps"
+)
+REACT_URL = "https://esm.sh/react@18"
+REACT_JSX_URL = "https://esm.sh/react@18/jsx-runtime"
+REACT_DOM_URL = "https://esm.sh/react-dom@18"
+REACT_DOM_CLIENT_URL = "https://esm.sh/react-dom@18/client"
+
+_EDITOR_CSS_CACHE: str | None = None
 
 
 class RenderError(RuntimeError):
@@ -74,10 +89,35 @@ def compute_bounding_box(elements: list[dict]) -> tuple[float, float, float, flo
     return (min_x, min_y, max_x, max_y)
 
 
+def load_editor_css() -> str:
+    """Load Excalidraw CSS once and inline it so the editor cannot render unstyled."""
+    global _EDITOR_CSS_CACHE
+    if _EDITOR_CSS_CACHE is not None:
+        return _EDITOR_CSS_CACHE
+
+    try:
+        with urllib.request.urlopen(EXCALIDRAW_CSS_URL, timeout=10) as response:
+            css = response.read().decode("utf-8")
+        if ".excalidraw" not in css:
+            raise RenderError("Downloaded Excalidraw CSS did not contain expected rules")
+        css = (
+            css
+            .replace("url(./", f"url({EXCALIDRAW_ASSET_BASE}")
+            .replace('url("./', f'url("{EXCALIDRAW_ASSET_BASE}')
+            .replace("url('./", f"url('{EXCALIDRAW_ASSET_BASE}")
+        )
+        _EDITOR_CSS_CACHE = css.replace("</style", "<\\/style")
+    except Exception:
+        # Keep a fallback instead of failing render/editor generation entirely.
+        _EDITOR_CSS_CACHE = f'@import url("{EXCALIDRAW_CSS_URL}");'
+    return _EDITOR_CSS_CACHE
+
+
 def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
     """Generate a companion interactive editor HTML file for the diagram."""
     editor_path = excalidraw_path.with_name(f"{excalidraw_path.name}_editor.html")
     safe_filename = html.escape(excalidraw_path.name)
+    editor_css = load_editor_css()
 
     # Excalidraw template HTML string
     template = """<!DOCTYPE html>
@@ -87,20 +127,20 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Excalidraw Live Editor - {filename}</title>
   <style>
-    body { margin: 0; padding: 0; }
+    body { margin: 0; padding: 0; overflow: hidden; }
     #app { height: 100vh; display: flex; flex-direction: column; }
+    {editor_css}
   </style>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.0/dist/prod/index.min.css" />
   <script>
-    window.EXCALIDRAW_ASSET_PATH = "https://cdn.jsdelivr.net/npm/@excalidraw/excalidraw@0.18.0/dist/prod/";
+    window.EXCALIDRAW_ASSET_PATH = "{asset_base}";
   </script>
   <script type="importmap">
     {
       "imports": {
-        "react": "https://esm.sh/react@18",
-        "react/jsx-runtime": "https://esm.sh/react@18/jsx-runtime",
-        "react-dom": "https://esm.sh/react-dom@18",
-        "react-dom/client": "https://esm.sh/react-dom@18/client"
+        "react": "{react_url}",
+        "react/jsx-runtime": "{react_jsx_url}",
+        "react-dom": "{react_dom_url}",
+        "react-dom/client": "{react_dom_client_url}"
       }
     }
   </script>
@@ -108,19 +148,27 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
 <body>
   <div id="app"></div>
   <script type="module">
-    import React, { useState, useEffect, useRef } from "react";
+    import React, { useState, useRef } from "react";
     import ReactDOM from "react-dom/client";
-    import { Excalidraw } from "https://esm.sh/@excalidraw/excalidraw@0.18.0?external=react,react-dom&bundle-deps";
+    import { Excalidraw } from "{excalidraw_module_url}";
 
     const initialData = {json_data};
+    const sourcePath = decodeURIComponent(window.location.pathname.replace(/^\\//, "").replace(/_editor\\.html$/, ""));
+    const serverSaveAvailable = window.location.protocol.startsWith("http") && sourcePath.endsWith(".excalidraw");
 
     function App() {
       const [fileBound, setFileBound] = useState(false);
       const [fileName, setFileName] = useState("");
+      const [saveStatus, setSaveStatus] = useState(serverSaveAvailable ? "Workspace autosave ready" : "Disconnected");
       const fileHandleRef = useRef(null);
-      const [excalidrawAPI, setExcalidrawAPI] = useState(null);
+      const excalidrawAPIRef = useRef(null);
+      const didReceiveInitialChangeRef = useRef(false);
 
       const handleBind = async () => {
+        if (!window.showOpenFilePicker) {
+          alert("This browser does not support direct local-file linking. Open through the dashboard for server autosave.");
+          return;
+        }
         try {
           const [handle] = await window.showOpenFilePicker({
             types: [{
@@ -137,42 +185,65 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
           const file = await handle.getFile();
           const text = await file.text();
           const fileData = JSON.parse(text);
-          if (excalidrawAPI) {
-            excalidrawAPI.updateScene({
+          if (excalidrawAPIRef.current) {
+            excalidrawAPIRef.current.updateScene({
               elements: fileData.elements || [],
               appState: fileData.appState || {},
               files: fileData.files || {}
             });
           }
+          setSaveStatus(`Linked local file: ${handle.name}`);
         } catch (err) {
           console.error("Binding failed:", err);
+          setSaveStatus("Link failed");
         }
       };
 
+      const buildDocument = (elements, appState, files) => ({
+        type: "excalidraw",
+        version: 2,
+        source: "https://excalidraw.com",
+        elements: elements.filter(el => !el.isDeleted),
+        appState: {
+          viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
+          gridSize: appState.gridSize || 20
+        },
+        files: files || {}
+      });
+
       const timerRef = useRef(null);
       const handleOnChange = (elements, appState, files) => {
-        if (!fileHandleRef.current) return;
+        if (!didReceiveInitialChangeRef.current) {
+          didReceiveInitialChangeRef.current = true;
+          return;
+        }
+        if (!serverSaveAvailable && !fileHandleRef.current) return;
         
         if (timerRef.current) clearTimeout(timerRef.current);
         timerRef.current = setTimeout(async () => {
           try {
-            const writable = await fileHandleRef.current.createWritable();
-            const jsonContent = JSON.stringify({
-              type: "excalidraw",
-              version: 2,
-              source: "https://excalidraw.com",
-              elements: elements.filter(el => !el.isDeleted),
-              appState: {
-                viewBackgroundColor: appState.viewBackgroundColor || "#ffffff",
-                gridSize: appState.gridSize || 20
-              },
-              files: files || {}
-            }, null, 2);
-            await writable.write(jsonContent);
-            await writable.close();
-            console.log("Auto-saved changes to disk!");
+            setSaveStatus("Saving...");
+            const documentData = buildDocument(elements, appState, files);
+            if (serverSaveAvailable) {
+              const response = await fetch("/api/save", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ path: sourcePath, data: documentData })
+              });
+              const result = await response.json();
+              if (!response.ok || !result.success) {
+                throw new Error(result.error || "Server save failed");
+              }
+              setSaveStatus("Saved to workspace");
+            } else {
+              const writable = await fileHandleRef.current.createWritable();
+              await writable.write(JSON.stringify(documentData, null, 2));
+              await writable.close();
+              setSaveStatus(`Saved to ${fileName || "linked file"}`);
+            }
           } catch (err) {
             console.error("Auto-save failed:", err);
+            setSaveStatus(`Save failed: ${err.message}`);
           }
         }, 800);
       };
@@ -206,12 +277,23 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
             }, "🏠 Dashboard"),
             React.createElement("div", null,
               React.createElement("h1", { style: { fontSize: "16px", margin: 0, fontWeight: "bold" } }, "Excalidraw Live Editor"),
-              React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Open from the dashboard, click 'Link Local File', and edit in real time.")
+              React.createElement("div", { style: { fontSize: "11px", opacity: 0.8 } }, "Dashboard sessions autosave to the workspace. Link Local File is only a fallback.")
             )
           ),
           React.createElement("div", { style: { display: "flex", alignItems: "center", gap: "12px" } },
-            fileBound ? React.createElement("span", { style: { background: "#10b981", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" } }, `Connected: ${fileName}`)
-                      : React.createElement("span", { style: { background: "#ef4444", padding: "4px 8px", borderRadius: "4px", fontSize: "12px", fontWeight: "bold" } }, "Disconnected"),
+            React.createElement("span", {
+              style: {
+                background: serverSaveAvailable || fileBound ? "#10b981" : "#ef4444",
+                padding: "4px 8px",
+                borderRadius: "4px",
+                fontSize: "12px",
+                fontWeight: "bold",
+                maxWidth: "360px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap"
+              }
+            }, saveStatus),
             React.createElement("button", {
               onClick: handleBind,
               style: {
@@ -230,7 +312,7 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
         ),
         React.createElement("div", { style: { flex: 1, position: "relative" } },
           React.createElement(Excalidraw, {
-            ref: (api) => setExcalidrawAPI(api),
+            excalidrawAPI: (api) => { excalidrawAPIRef.current = api; },
             initialData: initialData,
             onChange: (elements, appState, files) => handleOnChange(elements, appState, files)
           })
@@ -238,12 +320,8 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
       );
     }
 
-    // Wait for all web fonts (Virgil, Cascadia) to load before mounting Excalidraw,
-    // which prevents initial blurry text rendering and metric mismatch.
-    document.fonts.ready.then(() => {
-      const root = ReactDOM.createRoot(document.getElementById("app"));
-      root.render(React.createElement(App));
-    });
+    const root = ReactDOM.createRoot(document.getElementById("app"));
+    root.render(React.createElement(App));
   </script>
 </body>
 </html>"""
@@ -258,7 +336,18 @@ def write_editor_html(excalidraw_path: Path, data: dict) -> Path:
         "files": data.get("files", {})
     }
     
-    html_content = template.replace("{filename}", safe_filename).replace("{json_data}", json.dumps(clean_data, indent=2))
+    html_content = (
+        template
+        .replace("{filename}", safe_filename)
+        .replace("{editor_css}", editor_css)
+        .replace("{asset_base}", EXCALIDRAW_ASSET_BASE)
+        .replace("{react_url}", REACT_URL)
+        .replace("{react_jsx_url}", REACT_JSX_URL)
+        .replace("{react_dom_url}", REACT_DOM_URL)
+        .replace("{react_dom_client_url}", REACT_DOM_CLIENT_URL)
+        .replace("{excalidraw_module_url}", EXCALIDRAW_MODULE_URL)
+        .replace("{json_data}", json.dumps(clean_data, indent=2))
+    )
     editor_path.write_text(html_content, encoding="utf-8")
     return editor_path
 

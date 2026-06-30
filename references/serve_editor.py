@@ -12,7 +12,7 @@ import urllib.parse
 import webbrowser
 from pathlib import Path
 
-from render_excalidraw import render, write_editor_html
+from render_excalidraw import render, validate_excalidraw, write_editor_html
 
 
 SKIP_DIRS = {
@@ -444,6 +444,15 @@ def write_json(handler: http.server.BaseHTTPRequestHandler, status: int, payload
     handler.wfile.write(json.dumps(payload).encode("utf-8"))
 
 
+def write_diagram(path: Path, data: dict) -> None:
+    errors = validate_excalidraw(data)
+    if errors:
+        raise ValueError("; ".join(errors))
+    tmp_path = path.with_name(f".{path.name}.tmp")
+    tmp_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    tmp_path.replace(path)
+
+
 def clamp_int(value: object, default: int, min_value: int, max_value: int) -> int:
     try:
         parsed = int(value)
@@ -512,6 +521,15 @@ def serve(
                     write_json(self, 400, {"success": False, "error": "Path is not an .excalidraw file"})
                     return
 
+                if self.path == "/api/save":
+                    data = request.get("data")
+                    if not isinstance(data, dict):
+                        write_json(self, 400, {"success": False, "error": "Missing diagram data"})
+                        return
+                    write_diagram(diagram_path, data)
+                    write_json(self, 200, {"success": True})
+                    return
+
                 if self.path == "/api/render":
                     if not diagram_path.exists():
                         write_json(self, 404, {"success": False, "error": "Diagram file not found"})
@@ -541,8 +559,11 @@ def serve(
             except Exception as exc:
                 write_json(self, 500, {"success": False, "error": str(exc)})
 
-    socketserver.TCPServer.allow_reuse_address = True
-    server = socketserver.TCPServer((host, selected_port), Handler)
+    class ThreadingServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+        allow_reuse_address = True
+        daemon_threads = True
+
+    server = ThreadingServer((host, selected_port), Handler)
     url_host = "localhost" if host in {"", "0.0.0.0", "127.0.0.1"} else host
     url = f"http://{url_host}:{selected_port}/{urllib.parse.quote(filename)}"
 
