@@ -18,9 +18,21 @@ When the user provides strategy text, planning prose, or rough notes and wants e
 From the skill's `references/` directory:
 
 ```bash
+uv run python excalidraw_workspace.py doctor <workspace>
 uv run python excalidraw_workspace.py init <workspace>
 uv run python excalidraw_workspace.py new <workspace> --title "<diagram title>" --source <source-text.md>
-uv run python excalidraw_workspace.py serve <workspace>
+uv run python excalidraw_workspace.py serve <workspace> --daemon --no-browser
+```
+
+For Google Docs, use the fast path instead of manually reading and extracting the tab:
+
+```bash
+uv run python excalidraw_workspace.py from-gdoc <workspace> \
+  --url "<google-doc-url-with-tab>" \
+  --title "<diagram title>" \
+  --render \
+  --serve \
+  --no-browser
 ```
 
 If the text only exists in the chat and can be passed safely through stdin:
@@ -29,7 +41,7 @@ If the text only exists in the chat and can be passed safely through stdin:
 uv run python excalidraw_workspace.py new <workspace> --title "<diagram title>" --stdin
 ```
 
-The `new` command captures the source text under `inputs/`, creates a starter `.excalidraw` under `diagrams/`, updates `manifest.json`, and prints the exact target paths. Replace the starter canvas with the final designed Excalidraw JSON after the user selects the visualization metaphor.
+The `new` and `from-gdoc` commands capture source text under `inputs/`, create a starter `.excalidraw` under `diagrams/`, update `manifest.json`, and print exact target paths. Replace the starter canvas with the final designed Excalidraw JSON after the user selects the visualization metaphor.
 
 After writing or editing a diagram, render it:
 
@@ -44,6 +56,8 @@ uv run python excalidraw_workspace.py render-all <workspace> --scale 2 --width 1
 ```
 
 The dashboard server scans the workspace recursively, generates missing editor HTML files, shows PNG previews, lets the user refresh previews with scale/width controls, opens the local editor, downloads JSON, and deletes diagram companions.
+
+**Design preservation:** The workspace helper is only for intake, storage, rendering, and server orchestration. Keep the visual methodology, pattern library, color palette, and element templates aligned with the upstream Coleam Excalidraw diagram skill unless the user explicitly asks to change the diagram style itself.
 
 ## Customization
 

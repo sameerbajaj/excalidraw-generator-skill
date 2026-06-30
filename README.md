@@ -23,7 +23,7 @@ This repository is a fork of the original [excalidraw-diagram-skill](https://git
     *   *Fan-out & Convergence:* Directional arrows radiating from or collapsing into focal nodes.
 2.  **Evidence Artifacts:** Diagrams contain concrete examples—such as language-appropriate syntax-highlighted code blocks, real JSON payload blocks, and actual spec-defined event names—rather than generic placeholders.
 3.  **Visual Validation Loop:** Includes a Playwright-based Python script (`render_excalidraw.py`) that boots a headless Chromium instance to compile the `.excalidraw` JSON into a `.png` image. The agent inspects this image during generation to detect and fix text clippings, overlaps, or routing issues before presenting the file to the user.
-4.  **Central Diagram Workspace:** The `excalidraw_workspace.py` helper captures source text, stores diagrams in one workspace, renders previews, and starts a local dashboard/editor server.
+4.  **Central Diagram Workspace:** The `excalidraw_workspace.py` helper captures source text or a Google Doc tab, stores diagrams in one workspace, renders previews, and starts a health-checked local dashboard/editor server.
 5.  **Brand-Customizable:** A centralized color palette configuration (`references/color-palette.md`) dictates all shape colors, text colors, and background themes.
 
 ---
@@ -78,6 +78,7 @@ Create one workspace for all generated diagrams:
 
 ```bash
 cd ~/.gemini/skills/excalidraw-generator-skill/references
+uv run python excalidraw_workspace.py doctor ~/excalidraw-workspace
 uv run python excalidraw_workspace.py init ~/excalidraw-workspace
 ```
 
@@ -89,14 +90,27 @@ uv run python excalidraw_workspace.py new ~/excalidraw-workspace \
   --source /path/to/strategy-notes.md
 ```
 
+Capture a specific Google Doc tab through `gws`:
+
+```bash
+uv run python excalidraw_workspace.py from-gdoc ~/excalidraw-workspace \
+  --url "https://docs.google.com/document/d/DOC_ID/edit?tab=t.TAB_ID" \
+  --title "Strategy Model" \
+  --render \
+  --serve \
+  --no-browser
+```
+
 Render previews and open the dashboard/editor server:
 
 ```bash
 uv run python excalidraw_workspace.py render-all ~/excalidraw-workspace --scale 2 --width 1920
-uv run python excalidraw_workspace.py serve ~/excalidraw-workspace
+uv run python excalidraw_workspace.py serve ~/excalidraw-workspace --daemon --no-browser
 ```
 
 The dashboard lists all `.excalidraw` files in the workspace, creates missing editor HTML files, refreshes PNG previews with scale/width controls, opens diagrams in the local editor, downloads JSON, and can delete a diagram plus its generated companions.
+
+The workspace helper intentionally does not replace the diagram-design method inherited from `coleam00/excalidraw-diagram-skill`; it only removes the slow setup, Google Doc extraction, render, and server steps around that method.
 
 ---
 

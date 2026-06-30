@@ -11,7 +11,7 @@ This repository is a Codex/agent skill for creating Excalidraw diagrams that mak
 - `references/color-palette.md` is the single source of truth for all normal and Tuftefy colors.
 - `references/element-templates.md` contains copyable Excalidraw element JSON templates.
 - `references/json-schema.md` summarizes the Excalidraw properties the skill relies on.
-- `references/excalidraw_workspace.py` creates and manages one diagram workspace with `inputs/`, `diagrams/`, `exports/`, a manifest, render-all support, and the dashboard launcher.
+- `references/excalidraw_workspace.py` creates and manages one diagram workspace with `inputs/`, `diagrams/`, `exports/`, a manifest, Google Doc tab intake, render-all support, preflight checks, and a daemonized dashboard launcher.
 - `references/render_excalidraw.py` validates `.excalidraw` JSON, renders it with Playwright, writes a PNG, and generates a companion local editor HTML file.
 - `references/render_template.html` is the browser-side Excalidraw export wrapper used by the renderer.
 - `references/serve_editor.py` starts a local dashboard/editor server for `.excalidraw` files under a chosen directory, generates missing editor HTML files, and exposes preview refresh controls.
@@ -38,8 +38,21 @@ Create a diagram workspace:
 
 ```bash
 cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/references
+uv run python excalidraw_workspace.py doctor /path/to/excalidraw-workspace
 uv run python excalidraw_workspace.py init /path/to/excalidraw-workspace
 uv run python excalidraw_workspace.py new /path/to/excalidraw-workspace --title "Strategy Diagram" --source /path/to/source.md
+```
+
+Create a diagram workspace from a Google Doc tab:
+
+```bash
+cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/references
+uv run python excalidraw_workspace.py from-gdoc /path/to/excalidraw-workspace \
+  --url "https://docs.google.com/document/d/DOC_ID/edit?tab=t.TAB_ID" \
+  --title "Strategy Diagram" \
+  --render \
+  --serve \
+  --no-browser
 ```
 
 Render a diagram:
@@ -53,7 +66,7 @@ Open the dashboard/editor for a workspace:
 
 ```bash
 cd /Users/sameer.bajaj/PARA/Projects/python/pers_projects/excalidraw-generator/references
-uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace
+uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace --daemon --no-browser
 ```
 
 ## Operating Rules For Future Agents
@@ -67,6 +80,7 @@ uv run python excalidraw_workspace.py serve /path/to/excalidraw-workspace
 7. Save the final `.excalidraw` file under the workspace `diagrams/` directory and keep the captured source text under `inputs/`.
 8. After each generation or structural edit, render to PNG, inspect the image, fix defects, and repeat until the result is presentable.
 9. When editing an existing diagram, modify the same file unless the user explicitly asks for a different diagram type.
+10. Keep the visual methodology, pattern library, color palette, and element templates aligned with the upstream Coleam skill unless the user explicitly asks to change the design language.
 
 ## Known Friction
 
