@@ -1,6 +1,6 @@
 ---
 name: excalidraw-generator-skill
-description: Create Excalidraw diagram JSON files and manage a local diagram workspace/dashboard from strategy text, planning prose, workflows, architectures, or concepts. Use when the user wants to turn text into editable Excalidraw diagrams, store diagrams in one place, render PNG previews, run the local editor/dashboard server, or "tuftefy", "toughfy", or "Tuftefy" a diagram for readability, analytical honesty, and data-ink ratio.
+description: Create Excalidraw diagram JSON files and manage a local diagram workspace/dashboard from strategy text, planning prose, workflows, architectures, or concepts. Use when the user wants to turn text into editable Excalidraw diagrams, store diagrams in one place, render PNG previews, run the local editor/dashboard server, create targeted diagrams for specific document sections, first analyze a long document and propose diagram candidates before drawing, or "tuftefy", "toughfy", or "Tuftefy" a diagram for readability, analytical honesty, and data-ink ratio.
 ---
 
 # Excalidraw Generator Skill
@@ -35,13 +35,22 @@ uv run python excalidraw_workspace.py from-gdoc <workspace> \
   --no-browser
 ```
 
+For long documents or unclear scope, use source capture for intake only. Prefer `--no-starter` until the user chooses which section or argument should become a diagram:
+
+```bash
+uv run python excalidraw_workspace.py from-gdoc <workspace> \
+  --url "<google-doc-url-with-tab>" \
+  --title "<source title>" \
+  --no-starter
+```
+
 If the text only exists in the chat and can be passed safely through stdin:
 
 ```bash
 uv run python excalidraw_workspace.py new <workspace> --title "<diagram title>" --stdin
 ```
 
-The `new` and `from-gdoc` commands capture source text under `inputs/`, create a starter `.excalidraw` under `diagrams/`, update `manifest.json`, and print exact target paths. Replace the starter canvas with the final designed Excalidraw JSON after the user selects the visualization metaphor.
+The `new` and `from-gdoc` commands capture source text under `inputs/`, optionally create a starter `.excalidraw` under `diagrams/`, update `manifest.json`, and print exact target paths. Source capture is not permission to draw the whole source. Replace the starter canvas with the final designed Excalidraw JSON only after the user selects the target scope and visualization metaphor.
 
 After writing or editing a diagram, render it:
 
@@ -76,6 +85,31 @@ A diagram isn't formatted text. It's a visual argument that shows relationships,
 **The Isomorphism Test**: If you removed all text, would the structure alone communicate the concept? If not, redesign.
 
 **The Education Test**: Could someone learn something concrete from this diagram, or does it just label boxes? A good diagram teaches—it shows actual formats, real event names, concrete examples.
+
+## Source Triage For Long Documents
+
+For any Google Doc, multi-heading strategy document, or source longer than roughly 1,200 words, enter a planning gate even if the user asks to "generate a diagram" from the document. Do not create final Excalidraw JSON yet unless the user explicitly says to generate the whole document without questions.
+
+**Default behavior for long sources:**
+1. Capture/read the source text.
+2. Identify 3-6 diagram-worthy slices, not every section. Prefer sections with causality, trade-offs, flows, decisions, quantitative evidence, or user/team journeys.
+3. For each candidate, provide:
+   - Target section or argument.
+   - What the diagram would teach.
+   - Recommended visual metaphor.
+   - What content would be intentionally excluded.
+4. Recommend one default candidate, but ask the user to choose before generating.
+5. Ask whether to generate one targeted diagram, several separate diagrams, or a high-level overview map.
+
+**Bypass this gate only when:**
+- The user names the exact section, claim, workflow, or diagram target.
+- The source is already narrow enough to fit one visual argument.
+- The user explicitly requests a whole-document overview and accepts that it will be a summary map.
+- The user explicitly says to proceed without questions.
+
+Bad: Turning a launch email, PRD, or strategy memo into one crowded all-content canvas.
+
+Good: "I see four possible diagrams: early-result proof points, the Probe operating loop, the review/decision gate, and the MVP product surface. I recommend the operating loop first. Which one should I draw?"
 
 ---
 
@@ -251,24 +285,30 @@ For multi-concept diagrams: **each major concept must use a different visual pat
 ### Step 4: Sketch the Flow
 Before JSON, mentally trace how the eye moves through the diagram. There should be a clear visual story.
 
-### Step 5: Visualization Q&A & Selection Gate (MANDATORY)
+### Step 5: Scope + Visualization Q&A Gate (MANDATORY)
 
-Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** formulate a list of visualization options and ask the user to select one. Do **NOT** generate or display any Mermaid diagrams, and do **NOT** generate any Excalidraw files yet.
+Before generating any Excalidraw JSON or drawing any diagrams, you **MUST** formulate a list of scope and visualization options and ask the user to select one. Do **NOT** generate or display any Mermaid diagrams, and do **NOT** generate any Excalidraw files yet.
 
 **Why this exists:** Selecting the visual metaphor is the most critical design decision. Designing a flowchart when a 2x2 matrix or a chronological timeline makes more sense results in poor communication. Formulating options first saves time and ensures the diagram matches the user's communication goal.
 
 **How to execute this gate:**
-1. **Analyze the text/data**: Identify key data splits, user journeys, or core risk/strategic arguments.
-2. **Formulate 3 distinct visual proposals**:
+1. **Analyze the text/data**: Identify key data splits, user journeys, core risk/strategic arguments, and document sections that should be excluded.
+2. **Select the scope first**:
+   - One targeted section/argument.
+   - Several separate diagrams.
+   - Whole-document overview map.
+   - Edit/refine an existing diagram.
+3. **Formulate 3 distinct visual proposals for the selected or recommended scope**:
    - **Proposal A (e.g., Chronological / Timeline)**: Focusing on flow, sequences, or race conditions.
    - **Proposal B (e.g., Categorical / Matrix / Quadrants)**: Focusing on comparisons, decisions, or risk heatmaps.
    - **Proposal C (e.g., Quantitative / Funnel / Flow)**: Focusing on data sizing, leaks, or conversions.
-3. **Describe each proposal in text**: Explain the layout structure, visual patterns, and target focal point. Do **NOT** draw them as Mermaid blocks.
-4. **Include the Tuftefy Option**: Ask the user two questions in the initial setup (either combined or as separate options):
+4. **Describe each proposal in text**: Explain the layout structure, visual patterns, target focal point, and what content will not be included. Do **NOT** draw them as Mermaid blocks.
+5. **Include the Tuftefy Option**: Ask the user three questions in the initial setup:
+   - Which scope to draw.
    - Which visualization metaphor (Proposal A, B, or C) to construct.
    - Whether to **Tuftefy** (or **"toughfy"**) the diagram from the very beginning (applying data-ink maximization and the single focal accent).
-5. **Prompt the user to select**: Use the `ask_question` tool or ask directly in the chat.
-6. **Proceed ONLY after the user selects** the metaphor and style choice.
+6. **Prompt the user to select**: Use the `ask_question` tool if available, or ask directly in the chat. Keep the prompt short and decision-oriented.
+7. **Proceed ONLY after the user selects** the scope, metaphor, and style choice.
 
 ### Step 6: Generate JSON
 Only now create the Excalidraw elements. **See below for how to handle large diagrams.**

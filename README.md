@@ -90,12 +90,21 @@ uv run python excalidraw_workspace.py new ~/excalidraw-workspace \
   --source /path/to/strategy-notes.md
 ```
 
-Capture a specific Google Doc tab through `gws`:
+Capture a specific Google Doc tab through `gws`. For long docs, start with source capture and scope triage instead of generating one whole-document diagram:
 
 ```bash
 uv run python excalidraw_workspace.py from-gdoc ~/excalidraw-workspace \
   --url "https://docs.google.com/document/d/DOC_ID/edit?tab=t.TAB_ID" \
-  --title "Strategy Model" \
+  --title "Strategy Source" \
+  --no-starter
+```
+
+After the user picks the target section and visual metaphor, create/render the diagram:
+
+```bash
+uv run python excalidraw_workspace.py from-gdoc ~/excalidraw-workspace \
+  --url "https://docs.google.com/document/d/DOC_ID/edit?tab=t.TAB_ID" \
+  --title "Chosen Section Diagram" \
   --render \
   --serve \
   --no-browser
