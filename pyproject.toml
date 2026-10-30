@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "excalidraw-generator-skill"
+version = "0.1.0"
+description = "AI coding agent skill for generating structured, beautiful Excalidraw diagrams"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Sameer Bajaj", email = "sameer@sameerbajaj.com"}
+]
+keywords = ["excalidraw", "diagrams", "agent-skill", "ai"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://sameerbajaj.com"
+Repository = "https://github.com/sameerbajaj/excalidraw-generator-skill"

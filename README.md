@@ -140,3 +140,7 @@ The agent will load the generator skill, capture your source text into the works
 This skill is built upon the wonderful foundation created by **[coleam00/excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill)**. 
 
 Special thanks to the original author, [@coleam00](https://github.com/coleam00), for designing the core Excalidraw visual-arguing methodology, color palette definitions, and playwright rendering pipeline framework.
+
+---
+
+Part of the open-source tools collection by [Sameer Bajaj](https://sameerbajaj.com).
